@@ -1,58 +1,57 @@
+def run(program, input_value):
+    i = 0
+
+    while program[i] != 99:
+
+        opcode = program[i] % 100
+        modes = str((program[i] - opcode))[:-2].zfill(3)
+
+        parameter = [i+1]
+        if modes[-1] == '0':
+            parameter[0] = program[parameter[0]]
+
+        if opcode in [3,4]:
+            if opcode == 3:
+                program[parameter[0]] = input_value   
+            elif opcode == 4:
+                print(program[parameter[0]])
+            i += 2
+            continue
+
+        parameter.append(i+2)
+        if modes[-2] == '0':
+            parameter[1] = program[parameter[1]]
+
+        if opcode in [5,6]:
+            if opcode == 5 and (program[parameter[0]] != 0):
+                i = program[parameter[1]]
+                continue
+            elif opcode == 6 and (program[parameter[0]] == 0):
+                i = program[parameter[1]]
+                continue
+            i += 3
+            continue
+
+        parameter.append(i+3)
+        if modes[-3] == '0':
+            parameter[2] = program[parameter[2]]
+
+        if opcode in [1,2,7,8]:
+            if opcode == 1:
+                program[parameter[2]] = program[parameter[0]] + program[parameter[1]]
+            elif opcode == 2:
+                program[parameter[2]] = program[parameter[0]] * program[parameter[1]]
+            elif opcode == 7:
+                program[parameter[2]] = int(program[parameter[0]] < program[parameter[1]])
+            elif opcode == 8:
+                program[parameter[2]] = int(program[parameter[0]] == program[parameter[1]])
+            i += 4
+
 with open('input', 'r') as f:
     program = [int(i) for i in f.read().split(',')]
 
-i=0 # instruction pointer
+print('part1:')
+run(program.copy(), 1)
 
-while program[i] != 99:
-
-    if program[i] == 1: # add
-        program[program[i+3]] = program[program[i+1]] + program[program[i+2]]
-        i += 4
-
-    elif program[i] == 2: # multiply
-        program[program[i+3]] = program[program[i+1]] * program[program[i+2]]
-        i += 4
-
-    elif program[i] == 3: # input
-        program[program[i+1]] = 1 # as stated in the description
-        i += 2
-
-    elif program[i] == 4: # output
-        print(program[program[i+1]])
-        i += 2
-    
-    elif program[i] >= 100: # immediate mode
-
-        opcode = program[i] % 100
-        parameter_modes = str((program[i] - opcode))[:-2]
-
-        # pad the paramater modes if necesary
-        if opcode != 4:
-            parameter_modes = parameter_modes.zfill(3)[::-1]
-        else:
-            parameter_modes = parameter_modes[::-1]
-
-        parameters = []
-
-        for p in range(len(parameter_modes)):
-
-            mode = parameter_modes[p]
-
-            if mode == '0':
-                parameters.append(program[program[i+p+1]])
-            elif mode == '1':
-                parameters.append(program[i+p+1])
-
-        if opcode == 1: # add
-            program[program[i+3]] = parameters[0]+parameters[1]
-            i += 4
-        elif opcode == 2: # multiply
-            program[program[i+3]] = parameters[0]*parameters[1]
-            i += 4
-        elif opcode == 4:
-            print(parameters[0])
-            i += 2
-    
-    
-
-        
+print('\npart2:')
+run(program.copy(), 5)
