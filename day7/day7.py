@@ -1,65 +1,79 @@
 from itertools import permutations
 
-def run(program, input_values): # copied from day5 and modified for multiple inputs and output buffer
-    i = 0
-    input_counter = 0
-    output_buffer = []
+class Amplifier:
 
-    while program[i] != 99:
+    def __init__(self, program, phase):
 
-        opcode = program[i] % 100
-        modes = str((program[i] - opcode))[:-2].zfill(3)
+        self.program = program.copy()
+        self.i = 0
+        self.output_value = None
+        self.halted = False
 
-        parameter = [i+1]
-        if modes[-1] == '0':
-            parameter[0] = program[parameter[0]]
+        self.run_until_next_input(phase)
 
-        if opcode in [3,4]:
-            if opcode == 3:
-                program[parameter[0]] = input_values[input_counter]
-                input_counter += 1
-            elif opcode == 4:
-                # print(program[parameter[0]])
-                output_buffer.append(program[parameter[0]])
-            i += 2
-            continue
+    def run_until_next_input(self, input_value): 
 
-        parameter.append(i+2)
-        if modes[-2] == '0':
-            parameter[1] = program[parameter[1]]
+        i = self.i
+        program = self.program
+        first_input = True
 
-        if opcode in [5,6]:
-            if opcode == 5 and (program[parameter[0]] != 0):
-                i = program[parameter[1]]
+        while program[i] != 99:
+
+            opcode = program[i] % 100
+            modes = str((program[i] - opcode))[:-2].zfill(3)
+
+            parameter = [i+1]
+            if modes[-1] == '0':
+                parameter[0] = program[parameter[0]]
+
+            if opcode in [3,4]:
+                if opcode == 3:
+                    if not first_input:
+                        self.i = i
+                        self.program = program
+                        break
+                    program[parameter[0]] = input_value
+                    first_input = False
+                elif opcode == 4:
+                    self.output_value = program[parameter[0]]
+                i += 2
                 continue
-            elif opcode == 6 and (program[parameter[0]] == 0):
-                i = program[parameter[1]]
+
+            parameter.append(i+2)
+            if modes[-2] == '0':
+                parameter[1] = program[parameter[1]]
+
+            if opcode in [5,6]:
+                if opcode == 5 and (program[parameter[0]] != 0):
+                    i = program[parameter[1]]
+                    continue
+                elif opcode == 6 and (program[parameter[0]] == 0):
+                    i = program[parameter[1]]
+                    continue
+                i += 3
                 continue
-            i += 3
-            continue
 
-        parameter.append(i+3)
-        if modes[-3] == '0':
-            parameter[2] = program[parameter[2]]
+            parameter.append(i+3)
+            if modes[-3] == '0':
+                parameter[2] = program[parameter[2]]
 
-        if opcode in [1,2,7,8]:
-            if opcode == 1:
-                program[parameter[2]] = program[parameter[0]] + program[parameter[1]]
-            elif opcode == 2:
-                program[parameter[2]] = program[parameter[0]] * program[parameter[1]]
-            elif opcode == 7:
-                program[parameter[2]] = int(program[parameter[0]] < program[parameter[1]])
-            elif opcode == 8:
-                program[parameter[2]] = int(program[parameter[0]] == program[parameter[1]])
-            i += 4
-    
-    return output_buffer
+            if opcode in [1,2,7,8]:
+                if opcode == 1:
+                    program[parameter[2]] = program[parameter[0]] + program[parameter[1]]
+                elif opcode == 2:
+                    program[parameter[2]] = program[parameter[0]] * program[parameter[1]]
+                elif opcode == 7:
+                    program[parameter[2]] = int(program[parameter[0]] < program[parameter[1]])
+                elif opcode == 8:
+                    program[parameter[2]] = int(program[parameter[0]] == program[parameter[1]])
+                i += 4
+
+        else:
+            self.halted = True
+
 
 with open('input', 'r') as f:
     program = [int(i) for i in f.read().split(',')]
-
-# first input is phase setting
-# second input is input signal
 
 # part 1
 
@@ -68,14 +82,34 @@ max_thruster_signal = 0
 
 for phase_setting_sequence in permutations(phases):
 
+    amp_series = [Amplifier(program,p) for p in phase_setting_sequence]
     thruster_signal = 0
 
-    for phase_setting in phase_setting_sequence:
-
-        output_buffer = run(program, [phase_setting, thruster_signal])
-        thruster_signal = output_buffer[0]
+    for amp in amp_series:
+        amp.run_until_next_input(thruster_signal)
+        thruster_signal = amp.output_value
 
     if thruster_signal > max_thruster_signal:
         max_thruster_signal = thruster_signal
 
 print('Part 1: {}'.format(max_thruster_signal))
+
+# part 2
+
+phases = [9,7,8,5,6]
+max_thruster_signal = 0
+
+for phase_setting_sequence in permutations(phases):
+
+    amp_series = [Amplifier(program,p) for p in phase_setting_sequence]
+    thruster_signal = 0
+
+    while not amp_series[-1].halted:
+        for amp in amp_series:
+            amp.run_until_next_input(thruster_signal)
+            thruster_signal = amp.output_value
+
+    if thruster_signal > max_thruster_signal:
+        max_thruster_signal = thruster_signal
+
+print('Part 2: {}'.format(max_thruster_signal))
