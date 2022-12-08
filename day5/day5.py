@@ -44,13 +44,8 @@ with open('input','r') as f:
             stacks[dst].append(stacks[org].pop())
 
         # 2
-        for _ in range(N):
-            stacks2[dst] += stacks2[org][-N:]
-            del stacks2[org][-N:]
+        stacks2[dst] += stacks2[org][-N:]
+        del stacks2[org][-N:]
 
 print(''.join([stack[-1] for stack in stacks]))
-
-for stack in stacks2:
-
-    if len(stack) > 0:
-        print(stack[-1], end='')
+print(''.join([stack[-1] for stack in stacks2]))
